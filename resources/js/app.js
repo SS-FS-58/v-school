@@ -18,6 +18,9 @@ Vue.mixin(common)
 import Editor from 'vue-editor-js'
 Vue.use(Editor)
 
+// //custom Modal
+// import modal from './components/modal.vue'
+// Vue.use(modal)
 
 import VueFab from 'vue-float-action-button'
 Vue.use(VueFab, /* {
@@ -26,7 +29,17 @@ Vue.use(VueFab, /* {
     iconType: 'MaterialDesign'
     // iconType: 'iconfont'
   } */)
+  
+//vue-recorder
+import VueRecord from '@codekraft-studio/vue-record'
+Vue.use(VueRecord)
 
+//vue image viewer
+import 'viewerjs/dist/viewer.css'
+import Viewer from 'v-viewer'
+Vue.use(Viewer)
+
+//vue-Gotop
 import GoTop from '@inotom/vue-go-top';
 Vue.use(GoTop);
 
@@ -39,6 +52,11 @@ Vue.use(PerfectScrollbar)
 //Vue-Countdown-Timer Component
 import VueCountdownTimer from 'vuejs-countdown-timer'
 Vue.use(VueCountdownTimer)
+
+//vue-chat-scroll
+import VueChatScroll from 'vue-chat-scroll'
+Vue.use(VueChatScroll)
+
 
 //vue infinite Scroll bar//////// for this, installed vue-resource & vue-infinite-loading
 Vue.use(require('vue-resource'));
@@ -68,6 +86,12 @@ Vue.use(BaiduMap, {
 
 import { EmojiPickerPlugin } from 'vue-emoji-picker'
 Vue.use(EmojiPickerPlugin)
+
+import Fragment from 'vue-fragment'
+Vue.use(Fragment.Plugin)
+
+// import { Plugin } from 'vue-fragment'
+// Vue.use(Plugin)
 /**
  * The following block of code may be used to automatically register your
  * Vue components. It will recursively scan this directory for the Vue

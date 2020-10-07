@@ -27,7 +27,8 @@
                                 调查范围
                             </div>
                             <div class="es-item-right">
-                                <span>必填</span>
+                                <span v-if="addData.viewList && addData.viewList.length > 1">{{addData.viewList.length}}个群组</span>
+                                <span v-else>必填</span>
                                 <Icon type="ios-arrow-forward" /> 
                             </div>
                         </div>
@@ -37,7 +38,7 @@
                             截止时间
                         </div>
                         <div class="es-item-right">
-                            <DatePicker type="datetime" v-model="addData.deadline" placeholder="选填" ></DatePicker>
+                            <DatePicker type="datetime" :options="options"  v-model="addData.deadline" placeholder="选填" ></DatePicker>
                         </div>
                     </div>
                     <div class="es-item">
@@ -45,7 +46,7 @@
                             匿名问卷
                         </div>
                         <div class="es-item-right">
-                            <i-switch true-color="#13ce66" v-model="addData.questionaireFlag" />
+                            <i-switch true-color="#13ce66" v-model="addData.questionnaireFlag" />
                         </div>
                     </div>
                     <div class="es-item">
@@ -144,7 +145,7 @@
                     </router-link>
                     <div class="es-model-operate">
                         <Button type="primary" @click="submit" :disabled="isLoading" :loading="isLoading">提交</Button>
-                        <Button type="default" @click="draft" :disabled="isLoading" :loading="isLoading">存草稿</Button>
+                        <Button type="default" @click="draft" :disabled="isDrafting" :loading="isDrafting">存草稿</Button>
                     </div>
                 </div>
             </div>
@@ -153,8 +154,11 @@
                     <div  v-if="templateDataList.length">
                         <div class="template-item" v-for="(template ,i) in templateDataList" :key="i">
                             <router-link :to="{path:`${currentPath.path}?questionType=问卷`,query:{myprop:template}}">
-                                <img :src="template.imgUrl" alt="" class="picture">
-                                <p class="text">{{template.templateName}}</p>
+                                <Icon class="icon-close" type="ios-close" v-if="isEditing" @click="removeTemplate(template)"/>
+                                <img :src="template.imgUrl" alt="" class="picture" v-if="template.imgUrl">
+                                <img src="/img/icon/33.jpg" alt="" class="picture" v-else>
+                                <p class="text" v-if="template.templateName">{{template.templateName}}</p>
+                                <p class="text" v-else>draft</p>
                             </router-link>
                         </div>
                     </div>
@@ -164,18 +168,12 @@
                         </div>
                     </router-link>
                 </div>
+                <div class="edit-btn">
+                    <Button type="primary" @click="editTemplate">编辑</Button>
+                </div>
             </div>
             <div v-else-if="currentPath.query.addQuestion == '调查范围'">
-                <Menu>
-                    <Submenu name="1">
-                        <template slot="title">
-                            <Checkbox>
-                                内容管理
-                            </Checkbox>
-                        </template>
-                        <MenuItem name="1-1"><Checkbox>文章管理</Checkbox></MenuItem>
-                    </Submenu>
-                </Menu>
+                <schoolList :type="'问卷'"></schoolList>
             </div>
             <div v-else-if="currentPath.query.addQuestion == '单选题'">
                 <div v-for="index1 in count1" :key="index1">
@@ -299,11 +297,13 @@
 import appTemplate from './appTemplate'
 import questionItemComponent from './questionItemComponent'
 import contentComponent from './contentComponent'
+import schoolList from './schoolList'
 export default {
     components:{
         appTemplate,
         questionItemComponent,
         contentComponent,
+        schoolList
     },
     props:['myprop'],
     data(){
@@ -311,8 +311,9 @@ export default {
             addData:{
                 title:'',
                 description:'',
+                viewList:[],
                 deadline:'',
-                questionaireFlag:true,
+                questionnaireFlag:true,
                 resultFlag:true,
                 answerFlag:false,
                 type:0,
@@ -329,15 +330,27 @@ export default {
             maxMinute:2,
             templateCnt:0,
             draftCnt:0,
+            options: {
+                disabledDate (date) {
+                    return date && date.valueOf() < Date.now() - 86400000;
+                }
+            },
             templateDataList:[],
             tmeplateData:{},
             templateContent:{},
             isLoading:false,
+            isDrafting:false,
             singleContentDataArr:[],
             multiContentDataArr:[],
             questionAnswerDataArr:[],
             statisticsDataArr:[],
             scoringQuestoinsDataArr:[],
+            lessonList:[],
+            isEditing:false,
+            from:'',
+            to:'',
+            unit:'',
+
         }
     },
     computed:{
@@ -346,7 +359,7 @@ export default {
         }
     },
     watch:{
-        currentPath(value){
+        async currentPath(value){
             if(value.query.myprop){
                 this.templateData = value.query.myprop
                 // this.addData = this.templateData
@@ -363,19 +376,38 @@ export default {
                 this.addData.content.statisticsDataArr = this.templateContent.statisticsDataArr
                 this.addData.content.scoringQuestoinsDataArr = this.templateContent.scoringQuestoinsDataArr
             }
+            if(value.query.addQuestion == '应用模板'){
+                await axios.get('/api/template',{params:{
+                    contentType:1
+                }}).then(res=>{
+                    if(res.status == 200){
+                        this.templateDataList = res.data
+                    }
+                })
+            }
+            if(value.query.viewList){
+                this.addData.viewList = value.query.viewList;
+            }
         }
     },
     async created(){
-        const template = await this.callApi('get','/api/template')
-        if(template.status == 200){
-            this.templateDataList = template.data;
-            for( let i =0; i < this.templateDataList.length; i++){
-                if(this.templateDataList[i].type == 1){
-                    this.templateCnt +=1;
-                }else{
-                    this.draftCnt += 1;
+        axios.get('/api/template',{params:{
+            contentType:1
+        }}).then(template=>{
+            if(template.status == 200){
+                this.templateDataList = template.data;
+                for( let i =0; i < this.templateDataList.length; i++){
+                    if(this.templateDataList[i].templateType == 1){
+                        this.templateCnt +=1;
+                    }else{
+                        this.draftCnt += 1;
+                    }
                 }
             }
+        })
+        const lesson = await this.callApi('get','/api/surveyLesson')
+        if(lesson.status == 200){
+            this.lessonList = lesson.data;
         }
     },
     methods:{
@@ -404,7 +436,6 @@ export default {
             }else{
                 this.multiContentDataArr[index] = value;
             } 
-            console.log('multiContentDataArr',this.multiContentDataArr);
         },
         qaContentData(value){
             let index = this.questionAnswerDataArr.findIndex((el)=>
@@ -414,7 +445,6 @@ export default {
                 this.questionAnswerDataArr.push(value);
             else
                 this.questionAnswerDataArr[index] = value;
-            console.log('questionAnswerData',this.questionAnswerDataArr)
         },
         stContentData(value){
             let index = this.statisticsDataArr.findIndex((el)=>
@@ -424,7 +454,6 @@ export default {
                 this.statisticsDataArr.push(value);
             else
                 this.statisticsDataArr[index] = value
-            console.log('statisticsData',this.statisticsDataArr)
         },
         sqContentData(value){
             let index = this.scoringQuestoinsDataArr.findIndex((el)=>
@@ -434,10 +463,8 @@ export default {
                 this.scoringQuestoinsDataArr.push(value)
             else
                 this.scoringQuestoinsDataArr[index] = value
-            console.log('scoringQuestions',this.scoringQuestoinsDataArr)
         },
         singleSelect(){
-            console.log('single select');
             let found = this.singleContentDataArr.find(function(el){
                 return el.title == ''
             })
@@ -452,7 +479,6 @@ export default {
             this.isLoading = false
         },
         multiSelect(){
-            console.log('multiSelect');
             let found = this.multiContentDataArr.find(function(el){
                 return el.title == ''
             })
@@ -467,7 +493,6 @@ export default {
             this.isLoading = false;
         },
         questionAnswer(){
-            console.log('questionAnswer');
             let found = this.questionAnswerDataArr.find(function(el){
                 return el.title == ''
             })
@@ -482,7 +507,6 @@ export default {
             this.isLoading = false;
         },
         statistics(){
-            console.log('statistics');
             if(this.from == '' || this.to == '' || this.uint == ''){
                 this.error('标题不能为空')
                 return
@@ -494,17 +518,19 @@ export default {
             if(this.statisticsDataArr.length < 1 || found != undefined){
                 this.error('标题不能为空')
             }else{
-                this.$set(this.statisticsDataArr,'from',this.from)
-                this.$set(this.statisticsDataArr,'to',this.to)
-                this.$set(this.statisticsDataArr,'unit',this.unit)
+                this.$set(this.statisticsDataArr[0],'from',this.from)
+                this.$set(this.statisticsDataArr[0],'to',this.to)
+                this.$set(this.statisticsDataArr[0],'unit',this.unit)
                 this.addData.content.statisticsDataArr.push(this.statisticsDataArr)
                 this.statisticsDataArr = [];
                 this.$router.push(`${this.$route.path}?questionType=问卷`)
             }
             this.isLoading = false;
         },
+        visible($event){
+            this.maxMinute = $event;
+        },
         scoringQuestions(){
-            console.log('scoringQuestions');
             let found = this.scoringQuestoinsDataArr.find(function(el){
                 return el.title == ''
             })
@@ -512,7 +538,7 @@ export default {
             if(this.scoringQuestoinsDataArr.length < 1 || found != undefined){
                 this.error('标题不能为空')
             }else{
-                this.$set(this.scoringQuestoinsDataArr,'maxMinute',this.maxMinute)
+                this.$set(this.scoringQuestoinsDataArr[0],'maxMinute',this.maxMinute)
                 this.addData.content.scoringQuestoinsDataArr.push(this.scoringQuestoinsDataArr)
                 this.scoringQuestoinsDataArr = [];
                 this.$router.push(`${this.$route.path}?questionType=问卷`)
@@ -520,28 +546,49 @@ export default {
             this.isLoading = false;
         },
         async submit(){
+            if(this.addData.title == ''){
+                return this.error('标题/说明至少填写一项')
+            }
+            if(this.addData.deadline == ''){
+                return this.error('截止时间不能为空')
+            }
+            if(!(this.addData.viewList && this.addData.viewList.length > 1)){
+                return this.error('调查范围不能为空')
+            }
+            
             let userId = this.$store.state.user.id
             // this.$set(this.addData,'userId',userId)
-            const res = await this.callApi('post','/api/questionnaire',{data:this.addData,userId:userId})
+            this.isLoading = true;
+            const res = await this.callApi('post','/api/questionnaire',{data:this.addData,userId:userId,contentType:1})
             if(res.status == 201){
                 this.success('ok')
-                this.$router.push(this.$route.path)
+                this.$store.commit('setShowQuestionModal',false);
+                this.$router.push({path:this.$route.path,query:{addData:res.data}})
+
+            }else{
+                this.swr();
             }
+            this.isLoading = false;
         },
         async draft(){
             if(this.addData.title == ''){
                 return this.error('标题/说明至少填写一项')
             }
-            this.isLoading = true;
-            const res = await this.callApi('post','/api/template',this.addData)
-            console.log(res)
+            this.isDrafting = true;
+            const res = await this.callApi('post','/api/template',{title:this.addData.title,description:this.addData.description,content:this.addData.content,contentType:1,templateType:2})
             if(res.status == 201){
                 this.success('ok')
                 this.templateDataList.push(this.addData)
-                this.addData = [];
-                // this.$router.push(`${this.$route.path}?questionType=问卷&addQuestion=应用模板`)
+                // this.addData = [];
+                this.$router.push(`${this.$route.path}?questionType=问卷&addQuestion=应用模板`)
             }
-            this.isLoading = false;
+            this.isDrafting = false;
+        },
+        editTemplate(){
+            this.isEditing = !this.isEditing
+        },
+        removeTemplate(data){
+
         }
     }
 }

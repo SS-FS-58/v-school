@@ -1,9 +1,15 @@
 <template>
-    <div class="container">
-        <div class="row">
-            <div class="col-12">
-                <Button class="btnclass" :loading="isLoading" @click="addViewLiveLecturesModal"> View &amp; Modify Video Lecture  </Button>
-            </div>
+    <div class="">
+        <Row type="flex" justify="space-between" class="code-row-bg">
+            <Col span="8">
+                <div  @click="addViewLiveLecturesModal">
+                    <img src="/img/icon/会议 拷贝.png" alt="">
+                    <span>观看和修改视频讲课</span>
+                </div>
+            </Col>
+        </Row>
+                <!-- <Button class="btnclass" :loading="isLoading" @click="addViewLiveLecturesModal"> View &amp; Modify Video Lecture  </Button> -->
+            
             <Modal
                 footer-hide	
                 v-model="showLiveLectureModal"
@@ -166,7 +172,6 @@
                     </div>
                 </div>
             </Modal>
-        </div>
     </div>
 </template>
 
@@ -298,7 +303,7 @@ export default {
                this.liveLectureLists[this.updatingIndex].grade = this.updateLecture.grade;
                this.liveLectureLists[this.updatingIndex].subject = this.updateLecture.subject;
                this.liveLectureLists[this.updatingIndex].lecture_time = this.updateLecture.lecture_time;
-               this.success('Tag has been added successfully!');
+               this.success('Lecture has been updated successfully!');
                this.updateLectureModal = false;
             }else{
                 if(res.status == 422){

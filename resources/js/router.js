@@ -1,7 +1,6 @@
 import Vue from 'vue'
 import Router from 'vue-router'
 Vue.use(Router)
-import home from './view/home/index'
 //admin project pages
 import tags from './admin/pages/tags'
 import category from './admin/pages/category'
@@ -361,7 +360,7 @@ const routes = [
         path:"/baidumap/:name",
         component:baidumap,
         name:"baidumap"
-    }
+    },
 ]
 
 export default new Router({

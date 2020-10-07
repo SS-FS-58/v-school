@@ -9,10 +9,13 @@
                     <div class="es-header-main">
                         <Input suffix="ios-search" placeholder="Enter text" style="width: auto" />
                     </div>
-                    <div class="es-header-profile">
-                        <Avatar icon="ios-person" />
-                        <span>{{user.name}}</span>
-                        <span><a href="/logout" style="color:#cccaca">退出</a></span>
+                    <div @click="showProfileModal" class="es-header-profile d-flex">
+                        <div  class="clickable-profile-container ml-auto">
+                            <img :src="$store.state.user.userAvatar" class="avatar" alt="" v-if="$store.state.user.userAvater != ''">
+                            <Avatar icon="ios-person"  v-else/>
+                            <span>{{user.name}}</span>
+                        </div>
+                        <span><a href="/logout" style="color:#fff!important"> | 退出</a></span>
                     </div>
                 </div>
             </div>
@@ -32,9 +35,11 @@
                                 <Icon type="ios-analytics" />
                                 {{permissionList.schoolName}}
                             </template>
-                            <MenuItem v-for="(menuItem,j) in permissionList.menuList" :key="j" v-if="permissionList.menuList.length && menuItem.read" :name="`${i}-${j}`">
-                                <router-link :to="`/${menuItem.name}/index`">{{ menuItem.resourceName }}</router-link>
-                            </MenuItem>
+                            <router-link :to="`/${menuItem.name}/index`" v-for="(menuItem,j) in permissionList.menuList" :key="j" v-if="permissionList.menuList.length && menuItem.read">
+                                <MenuItem  :name="`${i}-${j}`">
+                                    {{ menuItem.resourceName }}
+                                </MenuItem>
+                            </router-link>
                             <!-- <router-link :to="menuItem.name" v-for="(menuItem,j) in permissionList.menuList" :key="j" v-if="permissionList.menuList.length && menuItem.read" :name="`${i}-${j}`">
                                 <MenuItem>{{ menuItem.resourceName }}</MenuItem>
                             </router-link> -->
@@ -45,13 +50,13 @@
                 <div class="es-router">
                     <router-view/>
                 </div>
-                <fab
+                <!-- <fab
                     :position="positionBottomRight"
                     :bg-color="bgColor"
                     :actions="fabActions"
                     @chat="chat"
                     @map="map"
-                ></fab>
+                ></fab> -->
             </div>
             <div class="es-footer">
                 copyright &#169; All reserved school
@@ -113,15 +118,44 @@
                 </div>
             </div>
         </div>
+        <Modal
+            v-model="chatModal"
+            title="chat"
+            class-name="chat-modal"
+            :styles="{top:'68px',left:'-245px'}"
+            scrollable
+            :mask-closable="false"
+            footer-hide
+        >
+            <chatComponent></chatComponent>
+        </Modal>
+        <modal
+            v-show="profileModal"
+            @close="closeProfileModalModal"
+        >
+            <template v-slot:title>
+                Profile
+            </template> 
+          
+            <template v-slot:body>
+               <profile></profile>
+            </template> 
+        </modal>
     </div>
 
 </template>
 <script>
+import profile from './profile/profile'
+import modal from './modal'
 import fab from 'vue-fab'
+import chatComponent from './pages/chatComponent'
 export default {
     props:['user','permission'],
     components:{
         fab,
+        chatComponent,
+        modal,
+        profile,
     },
     data(){
         return{
@@ -147,25 +181,27 @@ export default {
                 password: ''
             }, 
             isLogging: false,
-            policy:true, 
+            policy:true,
+            chatModal:false, 
+
+            //profile
+            profileModal : false,
         }
     },
     created(){
-        
-        //console.log('@@@@@@@@',this.permission);
         this.$store.commit('setUpdateUser',this.user);
         this.$store.commit('setUserPermission',this.permission);
     },
     methods:{
-      chat(){
-          console.log('chat');
-          
-      },
-      map(){
-          console.log('map');
-          this.$router.push('/baidumap')
-      },
-      async login(){
+        chat(){
+            console.log('chat');
+            this.chatModal = true;
+        },
+        map(){
+            console.log('map');
+            this.$router.push('/baidumap/index')
+        },
+        async login(){
             if(this.data.phoneNumber.trim()=='') return this.error('PhoneNumber is required')
             if(this.data.password.trim()=='') return this.error('Password is required')
             if(this.data.password.length < 6) return this.error('Incorrect login details')
@@ -188,8 +224,14 @@ export default {
                 }
             }
             this.isLogging = false
-        }
-  }
+        },
+        showProfileModal(){
+            this.profileModal = true;
+        },
+        closeProfileModalModal(){
+            this.profileModal = false;
+        },
+    }
 }
 </script>
 
@@ -214,7 +256,7 @@ export default {
         font-size: 14px;
     }
     #top-left-wrapper{
-        left: 18vw!important;
+        left: 19vw!important;
         top:10vh!important;
     }
     #bottom-right-wrapper{

@@ -86,14 +86,14 @@
                 </div>
             </div>
         </div>
-        <div class="category-title"></div>
+        <div class="category-title"></div> 
     </div>
 </template>
 
 <script>
 export default {
     props:[
-        'index','contentType'
+        'index','contentType','templateData'
     ],
     data(){
         return{
@@ -109,20 +109,29 @@ export default {
             token:'',
         }
     },
-    // watch:{
-    //     questionData(value){
-    //         console.log('watchcontentData',value)
-    //         this.$emit('contentData',this.questionData);
-    //     }
-    // },
+    watch:{
+       
+    },
     mounted:function(){
+        
         this.$watch('questionData',function(){
             this.$emit('contentData',this.questionData);
         },{deep:true})
+        if(this.templateData && this.index <= this.templateData.length){
+            this.questionData.title = this.templateData[this.index-1].title
+            this.questionData.imgUrl = this.templateData[this.index-1].imgUrl
+            this.questionData.otherUrl = this.templateData[this.index-1].otherUrl
+            this.questionData.videoUrl = this.templateData[this.index-1].videoUrl
+        }
     },
     created(){
         this.token = window.Laravel.csrfToken;
-        console.log('propstype',this.contentType);
+        // if(this.templateData && this.index <= this.templateData.length){
+        //     this.questionData.title = this.templateData[this.index-1].title
+        //     this.questionData.imgUrl = this.templateData[this.index-1].imgUrl
+        //     this.questionData.otherUrl = this.templateData[this.index-1].otherUrl
+        //     this.questionData.videoUrl = this.templateData[this.index-1].videoUrl
+        // }
         this.$set(this.questionData,'index',this.index)
         this.$set(this.questionData,'contentType',this.contentType)
         // console.log('singleSelectData',this.questionData);
@@ -132,7 +141,6 @@ export default {
         imageSuccess (res, file) {
             res = `/uploads/image/${res}`
             this.questionData.imgUrl.push(res);
-            console.log('imageUrl',this.questionData.imgUrl);
         },
         handleError (res, file) {
             this.$Notice.warning({
@@ -156,13 +164,11 @@ export default {
             let url = `/uploads/other/${res.fileName}`;
             this.$set(res,'imgUrl',url)
             this.questionData.otherUrl.push(res);
-            console.log('otherUrl',this.questionData.otherUrl)
         },
         videoSuccess(res,file){
             let url = `/uploads/video/${res.fileName}`
             this.$set(res,'imgUrl',url)
             this.questionData.videoUrl.push(res);
-            console.log('videoUrl',this.questionData.videoUrl);
         },
         async deleteFile(type,fileName){
             let filePath = '';
@@ -171,8 +177,6 @@ export default {
             }else {
                 filePath = fileName.imgUrl
             }
-            console.log(filePath);
-            
             const res = await this.callApi('delete','/api/fileUpload/file',{fileName:filePath});
             if(res.status == 200){
                 if(type == 'image'){

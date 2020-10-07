@@ -78,7 +78,8 @@ class AppTemplateController extends Controller
 
 
     public function getTemplate(Request $request){
-        return AppTemplate::all();
+        $contentType = $request->contentType;
+        return AppTemplate::where('contentType',$contentType)->get();
     }
 
     public function storeTemplate(Request $request){
@@ -90,14 +91,16 @@ class AppTemplateController extends Controller
         $templateTitle = $request->title;
         $templateDesc = $request->description;
         $templateContent = json_encode($request->content);
-        $type = $request->type;
+        $contentType = $request->contentType;
+        $templateType = $request->templateType;
         return AppTemplate::create([
             'templateName'=>$templateName,
             'imgUrl'=>$templateCover,
             'title'=>$templateTitle,
             'description'=>$templateDesc,
             'content'=>$templateContent,
-            'type'=>$type
+            'contentType'=>$contentType,
+            'templateType'=>$templateType
         ]);
 
     }
